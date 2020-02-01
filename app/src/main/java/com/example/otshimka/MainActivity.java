@@ -1,9 +1,11 @@
 package com.example.otshimka;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
@@ -59,14 +61,32 @@ public class MainActivity extends AppCompatActivity {
        list.removeAllViews();
        for(Element e : data){
            TextView t = new TextView(this);
-           t.setText(e.date+": "+e.step1+"+"+e.step2+"+"+e.step3+"+"+e.step4+"+"+e.step5+"+"+e.step6+"="+(e.step1+e.step2+e.step3+e.step4+e.step5+e.step6));
+          // t.setText(e.date+": "+e.step1+"+"+e.step2+"+"+e.step3+"+"+e.step4+"+"+e.step5+"+"+e.step6+"="+(e.step1+e.step2+e.step3+e.step4+e.step5+e.step6));
+           t.setText(e.date+": "+(e.step1+e.step2+e.step3+e.step4+e.step5+e.step6));
            t.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
            t.setHeight(65);
-           t.setTextSize(20);
+           t.setTextSize(25);
            t.setLines(1);
            t.setTextColor(Color.CYAN);
+           t.setOnClickListener(onClickEl);
            list.addView(t);
        }
+    }
+
+    private void alert(String msg){
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("Содержание")
+                .setMessage(msg)
+                .setIcon(R.drawable.fire)
+                .setCancelable(false)
+                .setNegativeButton("OK",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dialog.cancel();
+                            }
+                        });
+        AlertDialog alert = builder.create();
+        alert.show();
     }
 
     private void spinnerUpdate(String sellName){
@@ -126,6 +146,17 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
+    View.OnClickListener onClickEl = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            TextView t = (TextView) v;
+            Element e = db.find(t.getText().toString().split(":")[0]);
+            if(e != null) {
+                alert(e.step1+"+"+e.step2+"+"+e.step3+"+"+e.step4+"+"+e.step5+"+"+e.step6+"="+(e.step1+e.step2+e.step3+e.step4+e.step5+e.step6));
+            }else{
+                alert("Ошибка: не удалось найти елемент!");
+            }
+        }
+    };
 
 }

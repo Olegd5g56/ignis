@@ -39,6 +39,8 @@
             android:ems="10"
             android:enabled="true"
             android:inputType="number"
+            android:textColorHint="@color/hintColor"
+            android:text=""
             android:textColor="#00FFFF"
             android:textSize="24sp" />
 
@@ -50,7 +52,8 @@
             android:ems="10"
             android:enabled="false"
             android:inputType="number"
-            android:text="0"
+            android:textColorHint="@color/hintColor"
+            android:text=""
             android:textColor="#00FFFF"
             android:textSize="24sp" />
 
@@ -62,7 +65,8 @@
             android:ems="10"
             android:enabled="false"
             android:inputType="number"
-            android:text="0"
+            android:textColorHint="@color/hintColor"
+            android:text=""
             android:textColor="#00FFFF"
             android:textSize="24sp" />
 
@@ -74,7 +78,8 @@
             android:ems="10"
             android:enabled="false"
             android:inputType="number"
-            android:text="0"
+            android:textColorHint="@color/hintColor"
+            android:text=""
             android:textColor="#00FFFF"
             android:textSize="24sp" />
 
@@ -86,7 +91,8 @@
             android:ems="10"
             android:enabled="false"
             android:inputType="number"
-            android:text="0"
+            android:textColorHint="@color/hintColor"
+            android:text=""
             android:textColor="#00FFFF"
             android:textSize="24sp" />
 
@@ -98,13 +104,14 @@
             android:ems="10"
             android:enabled="false"
             android:inputType="number"
-            android:text="0"
+            android:textColorHint="@color/hintColor"
+            android:text=""
             android:textColor="#00FFFF"
             android:textSize="24sp" />
     </LinearLayout>
 
     <Button
-        android:id="@+id/MainButton"
+        android:id="@+id/NextB"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:onClick="onClick"
@@ -119,12 +126,24 @@
         android:id="@+id/lastrez"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TextView"
         android:textColor="#00FFFF"
         android:textSize="24sp"
+        android:onClick="onClickT"
         app:layout_constraintBottom_toTopOf="@+id/TimerText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/skipB"
+        android:layout_width="60dp"
+        android:layout_height="50dp"
+        android:onClick="onClick"
+        android:text="Skip"
+        android:enabled="false"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/TimerText" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
