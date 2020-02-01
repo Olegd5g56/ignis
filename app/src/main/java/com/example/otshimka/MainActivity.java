@@ -143,6 +143,11 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             break;
+            case R.id.graphB:
+                Intent intent1 = new Intent(this, GraphActivity.class);
+                intent1.putExtra(EXTRA_MESSAGE, spinner.getSelectedItem().toString());
+                startActivity(intent1);
+            break;
 
         }
     }

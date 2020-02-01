@@ -7,6 +7,8 @@
     android:background="#000000"
     tools:context=".AddActivity">
 
+
+
     <TextView
         android:id="@+id/TimerText"
         android:layout_width="100dp"

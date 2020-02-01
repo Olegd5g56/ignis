@@ -72,5 +72,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageView
+        android:id="@+id/graphB"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:onClick="onClick"
+        android:text="Button"
+        android:src="@drawable/graph"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/AddButton"
+        app:layout_constraintStart_toStartOf="parent" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

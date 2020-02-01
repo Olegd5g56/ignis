@@ -27,6 +27,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
+import com.jjoe64.graphview.GraphView;
 
 public class AddActivity extends AppCompatActivity implements OnCompletionListener  {
 
