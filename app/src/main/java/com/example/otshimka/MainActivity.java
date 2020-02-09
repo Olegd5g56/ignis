@@ -14,12 +14,15 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -91,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void spinnerUpdate(String sellName){
         final String[] data =  db.getTables();
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.row, R.id.weekofday, data);
+        MyCustomAdapter adapter = new MyCustomAdapter(this, R.id.weekofday, data);
         spinner.setAdapter(adapter);
         spinner.setPrompt("Title");
 
@@ -116,6 +119,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {}
         });
+
     }
     public void onClick(View v) {
         v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.myrotate));
@@ -163,5 +167,75 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+    View.OnClickListener onClickDel = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            final String tag =  v.getTag().toString();
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setTitle("Предупреждение")
+                    .setMessage("Вы уверены?")
+                    .setIcon(R.drawable.fire)
+                    .setCancelable(false)
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            db.delTable(tag);
+                            spinnerUpdate("Подтягивания");
+                        }
+                    })
+                    .setNegativeButton("Cancel",new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                        }
+                    });
+
+            //.setNegativeButton("Cancel", diclCancel);
+            AlertDialog alert = builder.create();
+            alert.show();
+
+        }
+    };
+
+
+
+
+
+    public class MyCustomAdapter extends ArrayAdapter<String> {
+
+        private String[] data = null;
+        public MyCustomAdapter(Context context, int textViewResourceId, String[] objects) {
+            super(context, textViewResourceId, objects);
+            data=objects;
+        }
+
+        @Override
+        public View getDropDownView(int position, View convertView, ViewGroup parent) {
+            return getCustomView(position, convertView, parent);
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            return getCustomView(position, convertView, parent);
+        }
+
+        public View getCustomView(int position, View convertView, ViewGroup parent) {
+
+            LayoutInflater inflater = getLayoutInflater();
+            View row = inflater.inflate(R.layout.row, parent, false);
+            TextView label = (TextView) row.findViewById(R.id.weekofday);
+            label.setText(data[position]);
+
+            ImageView icon = (ImageView) row.findViewById(R.id.icon);
+            icon.setOnClickListener(onClickDel);
+            icon.setTag(data[position]);
+
+            return row;
+        }
+    }
+
+
+
+
+
 
 }

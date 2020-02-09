@@ -81,17 +81,26 @@ public class AddActivity extends AppCompatActivity implements OnCompletionListen
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
 
-        steps.get(1).setHint(lastElement.step1+"");
-        steps.get(2).setHint(lastElement.step2+"");
-        steps.get(3).setHint(lastElement.step3+"");
-        steps.get(4).setHint(lastElement.step4+"");
-        steps.get(5).setHint(lastElement.step5+"");
-        steps.get(6).setHint(lastElement.step6+"");
+        if(lastElement != null) {
+            steps.get(1).setHint(lastElement.step1 + "");
+            steps.get(2).setHint(lastElement.step2 + "");
+            steps.get(3).setHint(lastElement.step3 + "");
+            steps.get(4).setHint(lastElement.step4 + "");
+            steps.get(5).setHint(lastElement.step5 + "");
+            steps.get(6).setHint(lastElement.step6 + "");
+        }else{
+            steps.get(1).setHint("0");
+            steps.get(2).setHint("0");
+            steps.get(3).setHint("0");
+            steps.get(4).setHint("0");
+            steps.get(5).setHint("0");
+            steps.get(6).setHint("0");
+        }
     }
 
     private void alert(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Содержание")
+        builder.setTitle("Предупреждение")
                 .setMessage("Вы уверены?")
                 .setIcon(R.drawable.fire)
                 .setCancelable(false)

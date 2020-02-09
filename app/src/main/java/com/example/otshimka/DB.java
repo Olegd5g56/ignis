@@ -73,7 +73,10 @@ public class DB {
     public int addTable(String name){
         try{
             Cursor c = db.query( "tablelist", null, null, null, null, null, null);
-            db.execSQL("create table "+("t"+(c.getCount()+1))+" ("
+            c.moveToLast();
+            int id = Integer.parseInt(c.getString(c.getColumnIndex("tableName")).replaceAll("t", ""))+1;
+            Log.d(LOG_TAG, "addTable " + c.getString(c.getColumnIndex("tableName")));
+            db.execSQL("create table "+("t"+id)+" ("
                     + "date text,"
                     + "step1 integer,"
                     + "step2 integer,"
@@ -84,12 +87,13 @@ public class DB {
 
             ContentValues cv =new ContentValues();
             cv.put("name",name);
-            cv.put("tableName","t"+(c.getCount()+1));
+            cv.put("tableName","t"+id);
             db.insert("tablelist", null,cv);
             selTable="t"+(c.getCount()+1);
 
             return 0;
         }catch(Exception e){
+            Log.d(LOG_TAG, "addTable "+e.getLocalizedMessage());
             return 1;
         }
     }
@@ -103,6 +107,7 @@ public class DB {
             int dateCI = c.getColumnIndex("name");
             do{
                 rez[i]=c.getString(dateCI);
+                Log.d(LOG_TAG, "zdes "+c.getString(c.getColumnIndex("tableName")));
                 i++;
             }while (c.moveToNext());
         }else {Log.d(LOG_TAG, "0 rows (getTables)");}
@@ -112,8 +117,14 @@ public class DB {
 
     public void selectTable(String name){
         selTable=findTableName(name);
-       // Log.d(LOG_TAG, selTable);
+        //Log.d(LOG_TAG, "selected table: "+name);
     }
+
+    public void delTable(String name){
+        db.execSQL("DROP TABLE "+findTableName(name)+";");
+        db.execSQL("DELETE FROM tablelist WHERE name='"+name+"'");
+    }
+
     public String getCurrentTable(){
         return selTable;
     }

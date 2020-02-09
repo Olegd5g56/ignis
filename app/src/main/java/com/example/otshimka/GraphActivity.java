@@ -37,6 +37,10 @@ public class GraphActivity extends AppCompatActivity {
         DB db = new DB(this);
         db.selectTable(TableName);
         ArrayList<Element> allData = db.read();
+        if(allData.size()==0){
+            allData.add(new Element("01.01.0001",0,0,0,0,0,0));
+        }
+
 
 
         GraphView graph = (GraphView) findViewById(R.id.graph);
