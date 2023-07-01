@@ -1,18 +1,24 @@
 package com.example.otshimka;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.documentfile.provider.DocumentFile;
 
-import android.content.ContentValues;
+import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
+import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteException;
 import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,14 +32,22 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
     private final static String LOG_TAG = "MYlog";
     public final static String EXTRA_MESSAGE = "EXTRA_MESSAGE";
+    private static final int PICK_DB_FILE = 1;
+    private static final int PICK_EXPORT_PATH = 2;
 
     DB db;
     LinearLayout list;
@@ -55,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
 
         spinnerUpdate(TableName);
 
+
+
         draw(db.read());
 
 
@@ -62,10 +78,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void draw(ArrayList<Element> data){
        list.removeAllViews();
+       int i = 0;
        for(Element e : data){
            TextView t = new TextView(this);
           // t.setText(e.date+": "+e.step1+"+"+e.step2+"+"+e.step3+"+"+e.step4+"+"+e.step5+"+"+e.step6+"="+(e.step1+e.step2+e.step3+e.step4+e.step5+e.step6));
            t.setText(e.date+": "+(e.step1+e.step2+e.step3+e.step4+e.step5+e.step6));
+           t.setTag(i);
            t.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
            t.setHeight(65);
            t.setTextSize(25);
@@ -73,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
            t.setTextColor(Color.CYAN);
            t.setOnClickListener(onClickEl);
            list.addView(t);
+           i++;
        }
     }
 
@@ -147,19 +166,89 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             break;
-            case R.id.graphB:
-                Intent intent1 = new Intent(this, GraphActivity.class);
-                intent1.putExtra(EXTRA_MESSAGE, spinner.getSelectedItem().toString());
-                startActivity(intent1);
+            case R.id.importButton:
+                Intent open_intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                open_intent.addCategory(Intent.CATEGORY_OPENABLE);
+                open_intent.setType("*/*");
+                startActivityForResult(open_intent,  PICK_DB_FILE);
             break;
-
+            case R.id.exportButton:
+                startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE),  PICK_EXPORT_PATH);
+            break;
         }
     }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICK_DB_FILE && resultCode == RESULT_OK && data != null) {
+            Uri source = data.getData(); // URI исходного файла
+            File destination = this.getDatabasePath("myDB"); // Файл назначения, куда нужно скопировать
+            Log.d(LOG_TAG, "Result URI: " + source);
+
+            try {
+                FileInputStream inputStream = (FileInputStream) getContentResolver().openInputStream(source);
+                FileOutputStream outputStream = new FileOutputStream(destination);
+
+                FileChannel inChannel = inputStream.getChannel();
+                FileChannel outChannel = outputStream.getChannel();
+
+                inChannel.transferTo(0, inChannel.size(), outChannel);
+
+                outputStream.close();
+                inputStream.close();
+
+                // Файл успешно скопирован
+                spinnerUpdate(null);
+                draw(db.read());
+                alert("Импортировано");
+                Log.i(LOG_TAG, "Database imported successfully to: " + destination.getAbsolutePath());
+            } catch (IOException e) {
+                e.printStackTrace();
+                alert("Ошибка импортирования");
+            }
+        }
+
+        if (requestCode == PICK_EXPORT_PATH && resultCode == RESULT_OK && data != null) {
+            DocumentFile pickedDir = DocumentFile.fromTreeUri(this, data.getData());
+            DocumentFile destination = pickedDir.createFile("application/octet-stream", "ignis.db");
+
+            File source = this.getDatabasePath("myDB");
+            Log.d(LOG_TAG, "Result URI: " + destination.getUri());
+
+            try {
+                FileInputStream inputStream = new FileInputStream(source);
+                FileOutputStream outputStream = (FileOutputStream) getContentResolver().openOutputStream(destination.getUri());
+
+                FileChannel inChannel = inputStream.getChannel();
+                FileChannel outChannel = outputStream.getChannel();
+
+                inChannel.transferTo(0, inChannel.size(), outChannel);
+
+                outputStream.close();
+                inputStream.close();
+
+                // Файл успешно скопирован
+                alert("Экспортировано");
+                Log.i(LOG_TAG, "Database exported successfully to: " + destination.getUri());
+            } catch (IOException e) {
+                e.printStackTrace();
+                alert("Ошибка экспорта");
+            }
+        }
+
+    }
+
+
+
+
     View.OnClickListener onClickEl = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             TextView t = (TextView) v;
-            Element e = db.find(t.getText().toString().split(":")[0]);
+            Element e = db.read().get((int)t.getTag());
             if(e != null) {
                 alert(e.step1+"+"+e.step2+"+"+e.step3+"+"+e.step4+"+"+e.step5+"+"+e.step6+"="+(e.step1+e.step2+e.step3+e.step4+e.step5+e.step6));
             }else{
@@ -232,9 +321,6 @@ public class MainActivity extends AppCompatActivity {
             return row;
         }
     }
-
-
-
 
 
 

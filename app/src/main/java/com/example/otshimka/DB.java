@@ -144,14 +144,6 @@ public class DB {
         return null;
     }
 
-    public Element find(String date){
-        ArrayList<Element> all = read();
-        for(Element e : all){
-            if(e.date.equals(date))return e;
-        }
-        return null;
-    }
-
     class DBHelper extends SQLiteOpenHelper {
 
         public DBHelper(Context context) {

@@ -27,7 +27,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-import com.jjoe64.graphview.GraphView;
 
 public class AddActivity extends AppCompatActivity implements OnCompletionListener  {
 
@@ -39,9 +38,11 @@ public class AddActivity extends AppCompatActivity implements OnCompletionListen
     DB db;
     String TableName;
     AudioManager audioManager;
+    MediaPlayer mediaPlayer;
     AFListener afListener;
     CountDownTimer cdt;
     Element lastElement;
+    EditText et_date;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,14 +57,14 @@ public class AddActivity extends AppCompatActivity implements OnCompletionListen
         db = new DB(this);
         db.selectTable(TableName);
 
-        ArrayList<Element> allData = db.read();
-        if(allData.size()>0) {
-            lastElement = allData.get(allData.size() - 1);
-            TextView t = (TextView) findViewById(R.id.lastrez);
-            //t.setText(e.date + ": " + e.step1 + "+" + e.step2 + "+" + e.step3 + "+" + e.step4 + "+" + e.step5 + "+" + e.step6 + "=" + (e.step1 + e.step2 + e.step3 + e.step4 + e.step5 + e.step6));
-            t.setText(lastElement.date + ": " + (lastElement.step1 + lastElement.step2 + lastElement.step3 + lastElement.step4 + lastElement.step5 + lastElement.step6));
+        mediaPlayer = MediaPlayer.create(this, R.raw.baraban);
+        mediaPlayer.setOnCompletionListener(this);
+        afListener = new AFListener(mediaPlayer, "Sound");
 
-        }
+        et_date = findViewById(R.id.editTextDate2);
+        Date currentDate = new Date();
+        DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        et_date.setText(dateFormat.format(currentDate));
 
 
         steps=new ArrayList<EditText>();
@@ -96,6 +97,27 @@ public class AddActivity extends AppCompatActivity implements OnCompletionListen
             steps.get(5).setHint("0");
             steps.get(6).setHint("0");
         }
+
+        findViewById(R.id.skipB).setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                for(EditText e : steps){
+                    e.setEnabled(true);
+                    if(e.getText().toString().equals("")) e.setText("-");
+                }
+                Button b = (Button)findViewById(R.id.NextB);
+                b.setText("Write");
+                b.setEnabled(true);
+                if(cdt!=null)cdt.cancel();
+                TextView tv = (TextView)findViewById(R.id.TimerText);
+                tv.setText("00:00");
+                findViewById(R.id.skipB).setEnabled(false);
+                return true;
+            }
+        });
+
+
+
     }
 
     private void alert(){
@@ -147,12 +169,10 @@ public class AddActivity extends AppCompatActivity implements OnCompletionListen
                 if(steps.get(4).getText().toString().equals(""))check = false;
                 if(steps.get(5).getText().toString().equals(""))check = false;
                 if(steps.get(6).getText().toString().equals(""))check = false;
+                if(et_date.getText().toString().equals(""))check = false;
 
                 if (check) {
-                    Date currentDate = new Date();
-                    DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-
-                    db.add(dateFormat.format(currentDate)
+                    db.add(et_date.getText().toString()
                             , Integer.parseInt(steps.get(1).getText().toString())
                             , Integer.parseInt(steps.get(2).getText().toString())
                             , Integer.parseInt(steps.get(3).getText().toString())
@@ -173,16 +193,6 @@ public class AddActivity extends AppCompatActivity implements OnCompletionListen
         }
     }
 
-    public void onClickT(View v) {
-        TextView t = (TextView) v;
-        Element e = db.find(t.getText().toString().split(":")[0]);
-        if(e != null) {
-            alert(e.step1+"+"+e.step2+"+"+e.step3+"+"+e.step4+"+"+e.step5+"+"+e.step6+"="+(e.step1+e.step2+e.step3+e.step4+e.step5+e.step6));
-        }else{
-            alert("Ошибка: не удалось найти елемент!");
-        }
-    }
-
     private void timer(int minuts){
         findViewById(R.id.skipB).setEnabled(true);
             if(cdt!=null){cdt.cancel(); cdt=null;}
@@ -191,7 +201,9 @@ public class AddActivity extends AppCompatActivity implements OnCompletionListen
                 int sec = (int)(millisUntilFinished / 1000);
                 TextView tv = (TextView)findViewById(R.id.TimerText);
                 // mTextField.setText("seconds remaining: " + millisUntilFinished / 1000);
-                tv.setText((sec/60)+":"+(sec%60));
+                String m = (sec/60) < 10 ? "0"+(sec/60) : ""+(sec/60);
+                String s = (sec%60) < 10 ? "0"+(sec%60) : ""+(sec%60);
+                tv.setText(m+":"+s);
               }
 
               public void onFinish() {
@@ -208,9 +220,9 @@ public class AddActivity extends AppCompatActivity implements OnCompletionListen
         steps.get(step).setText("");
 
         int durationHint = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT;
-        MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.baraban);
-        mediaPlayer.setOnCompletionListener(this);
-        afListener = new AFListener(mediaPlayer, "Sound");
+        //MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.baraban);
+        //mediaPlayer.setOnCompletionListener(this);
+        //afListener = new AFListener(mediaPlayer, "Sound");
         int requestResult = audioManager.requestAudioFocus(afListener, AudioManager.STREAM_MUSIC, durationHint);
         Log.d(LOG_TAG, "Sound request focus, result: " + requestResult);
         mediaPlayer.start();
