@@ -60,13 +60,35 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         String TableName = intent.getStringExtra(AddActivity.EXTRA_MESSAGE);
 
-        db = new DB(this);
         list = (LinearLayout) findViewById(R.id.list);
         spinner = (Spinner) findViewById(R.id.spinner);
 
-        spinnerUpdate(TableName);
-
-        if(spinner.getCount() > 0) draw(db.read(spinner.getSelectedItem().toString()));
+        try {
+            db = new DB(this);
+            spinnerUpdate(TableName);
+            if(spinner.getCount() > 0) draw(db.read(spinner.getSelectedItem().toString()));
+        } catch (Exception e){
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Ошибка")
+                    .setMessage("Ошибка базы данных! Удалить её?")
+                    .setIcon(R.drawable.fire)
+                    .setCancelable(false)
+                    .setPositiveButton("Удалить", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            deleteDatabase(db.dbName);
+                            db = new DB(MainActivity.this);
+                            recreate();
+                        }
+                    })
+                    .setNegativeButton("Отмена",new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                            finish();
+                        }
+                    });
+            AlertDialog alert = builder.create();
+            alert.show();
+        }
     }
 
     private void draw(ArrayList<Element> data){
@@ -213,16 +235,23 @@ public class MainActivity extends AppCompatActivity {
                     findViewById(R.id.editText).setVisibility(View.VISIBLE);
                     findViewById(R.id.editText).requestFocus();
                 } else {
+                    EditText et = (EditText) findViewById(R.id.editText);
+
+                    if (!et.getText().toString().equals("")) {
+                        if(et.getText().toString().length() > 20) {
+                            alert("Категория не может быть больше 20 символов!");
+                            return;
+                        }else {
+                            db.addCategory(et.getText().toString());
+                            draw(db.read(et.getText().toString()));
+                            spinnerUpdate(et.getText().toString());
+                            et.setText("");
+                        }
+                    }
+
                     findViewById(R.id.spinner).setVisibility(View.VISIBLE);
                     findViewById(R.id.editText).setVisibility(View.INVISIBLE);
 
-                    EditText et = (EditText) findViewById(R.id.editText);
-                    if (!et.getText().toString().equals("")) {
-                        db.addTable(et.getText().toString());
-                        draw(db.read(et.getText().toString()));
-                        spinnerUpdate(et.getText().toString());
-                        et.setText("");
-                    }
                 }
             }else if (v.getId() == R.id.DelButton) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
@@ -261,7 +290,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == PICK_DB_FILE && resultCode == RESULT_OK && data != null) {
             Uri source = data.getData(); // URI исходного файла
-            //File destination = this.getDatabasePath(db.getWritableDatabase().getPath()); // Файл назначения, куда нужно скопировать
             File destination = new File(db.getWritableDatabase().getPath()); // Файл назначения, куда нужно скопировать
             Log.d(LOG_TAG, "Result URI: " + source);
             Log.d(LOG_TAG, "BD path: " + db.getWritableDatabase().getPath());
@@ -271,21 +299,14 @@ public class MainActivity extends AppCompatActivity {
             try {
                 FileInputStream inputStream = (FileInputStream) getContentResolver().openInputStream(source);
                 FileOutputStream outputStream = new FileOutputStream(destination);
-
                 FileChannel inChannel = inputStream.getChannel();
                 FileChannel outChannel = outputStream.getChannel();
-
                 inChannel.transferTo(0, inChannel.size(), outChannel);
-
                 outputStream.close();
                 inputStream.close();
 
-                db = new DB(this);
-                // Файл успешно скопирован
-                spinnerUpdate(null);
-                draw(db.read(db.getCategoryList()[0]));
-                alert("Импортировано");
                 Log.i(LOG_TAG, "Database imported successfully to: " + destination.getAbsolutePath());
+                recreate();
             } catch (IOException e) {
                 e.printStackTrace();
                 alert("Ошибка импортирования");

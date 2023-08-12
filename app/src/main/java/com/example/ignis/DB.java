@@ -2,18 +2,25 @@ package com.example.ignis;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import androidx.appcompat.app.AlertDialog;
+
 import java.util.ArrayList;
 
 class DB extends SQLiteOpenHelper {
     private static final String LOG_TAG = "IGNIS_DB_LOG";
+    public static final String dbName = "ignis.db";
+    private final Object lock = new Object();
     private SQLiteDatabase db;
+    Context context;
     public DB(Context context) {
-        super(context, "ignis.db", null, 3);
+        super(context, dbName, null, 3);
+        this.context=context;
         db=this.getWritableDatabase();
     }
 
@@ -22,50 +29,40 @@ class DB extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         Log.d(LOG_TAG, "--- onUpgrade database ---");
-        if(oldVersion==2 && newVersion==3){
-            for (String table : getTableNames(db)){
-                db.execSQL("CREATE TABLE temp_table AS SELECT * FROM `"+table+"`");
-                // Удаление старой таблицы
-                db.execSQL("DROP TABLE IF EXISTS `"+table+"`");
-                // Создание новой таблицы с новой схемой, включая столбец id
-                db.execSQL("create table `"+table+"` ("
-                        + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                        + "date text,"
-                        + "step1 integer,"
-                        + "step2 integer,"
-                        + "step3 integer,"
-                        + "step4 integer,"
-                        + "step5 integer,"
-                        + "step6 integer" + ");");
-                // Копирование данных из временной таблицы в новую таблицу
-                db.execSQL("INSERT INTO `"+table+"` (date,step1,step2,step3,step4,step5,step6) SELECT date,step1,step2,step3,step4,step5,step6 FROM temp_table");
-                // Удаление временной таблицы
-                db.execSQL("DROP TABLE IF EXISTS temp_table");
-
-                Cursor c = db.rawQuery("SELECT * FROM `"+table+"`", null);
-                int idCounter = 1;
+            if (oldVersion == 2 && newVersion == 3) {
+                Log.d(LOG_TAG, "Upgrade from 2 to 3");
+                for (String table : getTableNames(db)) {
+                    db.execSQL("CREATE TABLE temp_table AS SELECT * FROM `" + table + "`");
+                    db.execSQL("DROP TABLE IF EXISTS `" + table + "`");
+                    addTable(db, table);
+                    db.execSQL("INSERT INTO `" + table + "` (date,step1,step2,step3,step4,step5,step6) SELECT date,step1,step2,step3,step4,step5,step6 FROM temp_table");
+                    db.execSQL("DROP TABLE IF EXISTS temp_table");
+                }
+            } else if (oldVersion == 1 && newVersion == 3) {
+                Log.d(LOG_TAG, "Upgrade from 1 to 3");
+                Cursor c = db.rawQuery("SELECT * FROM tablelist", null);
                 if (c.moveToFirst()) {
                     do {
-                        int dateColumIndex = c.getColumnIndex("date");
-                        db.execSQL("UPDATE `"+table+"` SET id="+idCounter+" WHERE date = '"+c.getString(dateColumIndex)+"'");
-                        idCounter++;
+                        String category_name = c.getString(0);
+                        String table_name = c.getString(1);
+                        addTable(db, category_name);
+                        db.execSQL("INSERT INTO `" + category_name + "` (date,step1,step2,step3,step4,step5,step6) SELECT date,step1,step2,step3,step4,step5,step6 FROM " + table_name);
+                        db.execSQL("DROP TABLE IF EXISTS " + table_name);
                     } while (c.moveToNext());
                 } else
                     Log.d(LOG_TAG, "0 rows");
                 c.close();
+                db.execSQL("DROP TABLE IF EXISTS tablelist");
+            } else {
+                Log.e(LOG_TAG, "Upgrade not supported! oldVersion=" + oldVersion + "; newVersion=" + newVersion);
             }
-
-        }
     }
 
     public void add(String category ,String date,int step1, int step2,int step3,int step4,int step5,int step6){
         Log.d(LOG_TAG, "add to "+category);
         ArrayList<Element> data = read(category);
 
-        //int id = data.size() == 0 ? 0 : data.get(data.size()-1).id+1;
-
         ContentValues cv = new ContentValues();
-        //cv.put("id", id);
         cv.put("date", date);
         cv.put("step1", step1);
         cv.put("step2", step2);
@@ -78,7 +75,10 @@ class DB extends SQLiteOpenHelper {
     public void del(String category, int id){
         db.execSQL("DELETE FROM `"+category+"` WHERE id="+id);
     }
-    public int addTable(String category){
+    public int addCategory(String category){
+        return addTable(db,category);
+    }
+    private int addTable(SQLiteDatabase db, String category){
         try{
             db.execSQL("create table `"+category+"` ("
                     + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
