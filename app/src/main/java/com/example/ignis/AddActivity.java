@@ -52,7 +52,7 @@ public class AddActivity extends AppCompatActivity implements MediaPlayer.OnComp
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        Log.d(LOG_TAG, "onCreate: "+savedInstanceState);
+        Log.d(LOG_TAG, "onCreate: ");
 
         Intent intent = getIntent();
         TableName = intent.getStringExtra(MainActivity.EXTRA_MESSAGE);
@@ -100,8 +100,8 @@ public class AddActivity extends AppCompatActivity implements MediaPlayer.OnComp
             }
         }
 
-
-        if(addActivityState.getAll().size() != 0){
+        if(addActivityState.getAll().size() != 0 && addActivityState.contains("current_step") && addActivityState.getString("category","null").equals(TableName)){
+            step=addActivityState.getInt("current_step",1);
             et_date.setText(addActivityState.getString("date","null"));
             steps.get(1).setText(addActivityState.getString("step1","null"));
             steps.get(2).setText(addActivityState.getString("step2","null"));
@@ -110,10 +110,11 @@ public class AddActivity extends AppCompatActivity implements MediaPlayer.OnComp
             steps.get(5).setText(addActivityState.getString("step5","null"));
             steps.get(6).setText(addActivityState.getString("step6","null"));
 
-
-            for (EditText i : steps) {
-                if(!i.getText().toString().equals("")) i.setEnabled(true);
+            for (int i = 1 ; i <= step ; i++){
+                steps.get(i).setEnabled(true);
             }
+            steps.get(step).requestFocus();
+            if(step == 6) ((Button)findViewById(R.id.NextB)).setText("Write");
         }
 
         findViewById(R.id.skipB).setOnLongClickListener(new View.OnLongClickListener() {
@@ -129,7 +130,9 @@ public class AddActivity extends AppCompatActivity implements MediaPlayer.OnComp
                 if(cdt!=null)cdt.cancel();
                 TextView tv = (TextView)findViewById(R.id.TimerText);
                 tv.setText("00:00");
-                findViewById(R.id.skipB).setEnabled(false);
+
+                addActivityState.edit().clear().apply();
+
                 return true;
             }
         });
@@ -142,36 +145,13 @@ public class AddActivity extends AppCompatActivity implements MediaPlayer.OnComp
     protected void onStop(){
         super.onStop();
         Log.d(LOG_TAG, "onStop");
-
-        boolean check = false;
-        if(!steps.get(1).getText().toString().equals(""))check = true;
-        if(!steps.get(2).getText().toString().equals(""))check = true;
-        if(!steps.get(3).getText().toString().equals(""))check = true;
-        if(!steps.get(4).getText().toString().equals(""))check = true;
-        if(!steps.get(5).getText().toString().equals(""))check = true;
-        if(!steps.get(6).getText().toString().equals(""))check = true;
-
-        SharedPreferences.Editor prefEditor = addActivityState.edit();
-        if(addActivityState.contains("writed")) {
-            prefEditor.clear();
-            prefEditor.apply();
-        }else if(check){
-            Log.d(LOG_TAG, "onStop: Save");
-            prefEditor.putString("date", et_date.getText().toString());
-            prefEditor.putString("step1", steps.get(1).getText().toString());
-            prefEditor.putString("step2", steps.get(2).getText().toString());
-            prefEditor.putString("step3", steps.get(3).getText().toString());
-            prefEditor.putString("step4", steps.get(4).getText().toString());
-            prefEditor.putString("step5", steps.get(5).getText().toString());
-            prefEditor.putString("step6", steps.get(6).getText().toString());
-            prefEditor.apply();
-        }else{
-            prefEditor.clear();
-            prefEditor.apply();
-        }
-
-        db.close();
-
+    }
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        Log.d(LOG_TAG, "onDestroy");
+        if(cdt!=null)cdt.cancel();
+        if(db!=null)db.close();
     }
 
     public void onClick(View v) {
@@ -184,9 +164,22 @@ public class AddActivity extends AppCompatActivity implements MediaPlayer.OnComp
                 if(step==4) {timer(3); b.setEnabled(false);}
                 if(step==5){ timer(2); b.setEnabled(false);}
                 if(step==6){ timer(1); b.setEnabled(false); b.setText("Write");}
+
+                SharedPreferences.Editor prefEditor = addActivityState.edit();
+                prefEditor.clear();
+                prefEditor.putInt("current_step", step);
+                prefEditor.putString("category", TableName);
+                prefEditor.putString("date", et_date.getText().toString());
+                prefEditor.putString("step1", steps.get(1).getText().toString());
+                prefEditor.putString("step2", steps.get(2).getText().toString());
+                prefEditor.putString("step3", steps.get(3).getText().toString());
+                prefEditor.putString("step4", steps.get(4).getText().toString());
+                prefEditor.putString("step5", steps.get(5).getText().toString());
+                prefEditor.putString("step6", steps.get(6).getText().toString());
+                prefEditor.apply();
+
                 break;
             case "Write":
-
                 boolean check = true;
                 if(steps.get(1).getText().toString().equals(""))check = false;
                 if(steps.get(2).getText().toString().equals(""))check = false;
@@ -212,9 +205,7 @@ public class AddActivity extends AppCompatActivity implements MediaPlayer.OnComp
                             , Integer.parseInt(steps.get(5).getText().toString())
                             , Integer.parseInt(steps.get(6).getText().toString()));
 
-                    SharedPreferences.Editor prefEditor = addActivityState.edit();
-                    prefEditor.putString("writed", "1");
-                    prefEditor.apply();
+                    addActivityState.edit().clear().apply();
 
                     Intent intent = new Intent(this, MainActivity.class);
                     intent.putExtra(EXTRA_MESSAGE, TableName);
@@ -252,7 +243,7 @@ public class AddActivity extends AppCompatActivity implements MediaPlayer.OnComp
     private void timer(int minuts){
         findViewById(R.id.skipB).setEnabled(true);
         if(cdt!=null){cdt.cancel(); cdt=null;}
-        cdt = new CountDownTimer(minuts*60*1000, 1000) {//minuts*60*1000
+        cdt = new CountDownTimer(minuts*60*1000, 1000) {
             public void onTick(long millisUntilFinished) {
                 int sec = (int)(millisUntilFinished / 1000);
                 TextView tv = (TextView)findViewById(R.id.TimerText);
@@ -280,7 +271,7 @@ public class AddActivity extends AppCompatActivity implements MediaPlayer.OnComp
         TextView tv = (TextView)findViewById(R.id.TimerText);
         tv.setText("00:00");
 
-        findViewById(R.id.skipB).setEnabled(false);
+        //findViewById(R.id.skipB).setEnabled(false);
     }
 
     @Override

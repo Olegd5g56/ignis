@@ -60,7 +60,6 @@ class DB extends SQLiteOpenHelper {
 
     public void add(String category ,String date,int step1, int step2,int step3,int step4,int step5,int step6){
         Log.d(LOG_TAG, "add to "+category);
-        ArrayList<Element> data = read(category);
 
         ContentValues cv = new ContentValues();
         cv.put("date", date);
